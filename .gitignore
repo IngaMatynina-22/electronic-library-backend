@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local library data (keep directory placeholders)
+data/**
+!data/.gitkeep
+!data/books/
+!data/books/.gitkeep
+!data/covers/
+!data/covers/.gitkeep
+!data/cache/
+!data/cache/.gitkeep
+!data/backups/
+!data/backups/.gitkeep
+
+# Tests / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
