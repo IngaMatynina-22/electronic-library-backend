@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import shutil
 import sys
+import textwrap
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -37,14 +38,29 @@ def _make_pdf(
     publisher: str | None = None,
 ) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
+    font_candidates = [
+        Path("C:/Windows/Fonts/arial.ttf"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"),
+        Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
+    ]
+    font_path = next((candidate for candidate in font_candidates if candidate.is_file()), None)
+    if font_path is None:
+        raise RuntimeError("A Unicode font is required to generate Ukrainian demo PDFs")
     doc = fitz.open()
     for text in pages:
         page = doc.new_page()
         # Multi-line text
         y = 72
-        for line in text.split("\n"):
-            page.insert_text((72, y), line[:110])
-            y += 16
+        for source_line in text.split("\n"):
+            for line in textwrap.wrap(source_line, width=70) or [""]:
+                page.insert_text(
+                    (72, y),
+                    line,
+                    fontname="seed-ukrainian",
+                    fontfile=str(font_path),
+                )
+                y += 16
     meta = {"title": title, "author": author}
     if publisher:
         meta["producer"] = publisher
@@ -60,7 +76,7 @@ def _make_epub(
     title: str,
     author: str,
     chapters: list[tuple[str, str]],
-    language: str = "en",
+    language: str = "uk",
 ) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     book = epub.EpubBook()
@@ -126,106 +142,120 @@ def _wipe_data_dir(config: AppConfig) -> None:
 
 
 def generate_seed_sources(sources_dir: Path) -> dict[str, Path]:
-    """Create diverse mini PDF/EPUB files for import."""
+    """Create complete original Ukrainian demo books for import."""
     sources_dir.mkdir(parents=True, exist_ok=True)
     files: dict[str, Path] = {}
 
     files["dune_pdf"] = _make_pdf(
-        sources_dir / "dune_excerpt.pdf",
-        title="Dune (Excerpt)",
-        author="Frank Herbert",
-        publisher="Chilton Books",
+        sources_dir / "mist_nad_tumanom.pdf",
+        title="Місто над туманом",
+        author="Олена Верес",
+        publisher="Навчальне видання",
         pages=[
-            "Chapter 1 — Arrakis\nA beginning is the time for taking the most delicate care\n"
-            "that the balances are correct. This every sister of the Bene Gesserit knows.",
-            "Page 2 — Desert power\nThe spice must flow. He who controls the spice controls the universe.\n"
-            "Paul Atreides watched the desert shimmer under twin moons.",
-            "Page 3 — Mentat\nIt is by will alone I set my mind in motion.\n"
-            "The fear reflex is useful until courage becomes habit.",
-            "Page 4 — Prophecy\nThe sleeper must awaken. Destiny and choice intertwined\n"
-            "upon the sand and rock of Arrakis.",
-            "Page 5 — Ending note\nSeed keyword labyrinth appears here for fulltext search demos.",
+            "Розділ 1. Останній трамвай\nУ місті над рікою туман приходив раніше за вечір.\n"
+            "Марта затрималася в архіві й почула дзвін останнього трамвая.",
+            "Розділ 2. Квиток без дати\nНа сидінні лежав синій квиток без номера.\n"
+            "На звороті хтось написав: «Шукай світло біля старого мосту».",
+            "Розділ 3. Архіварка\nБіля мосту Марта зустріла пані Лідію, колишню архіварку.\n"
+            "Та пояснила, що місто зберігає пам'ять у людських історіях.",
+            "Розділ 4. Вікно на пагорбі\nРазом вони знайшли будинок із незачиненим вікном.\n"
+            "Усередині лежали листи мешканців, які колись урятували район.",
+            "Розділ 5. Ранок\nМарта передала листи до міського музею.\n"
+            "Коли туман розвіявся, старий трамвай знову задзвонив на мосту.\n"
+            "Тепер його маршрут був позначений на новій мапі міста.",
         ],
     )
 
     files["pride_pdf"] = _make_pdf(
-        sources_dir / "pride_prejudice.pdf",
-        title="Pride and Prejudice (Excerpt)",
-        author="Jane Austen",
-        publisher="T. Egerton",
+        sources_dir / "lyst_z_horyshcha.pdf",
+        title="Лист із зеленого горища",
+        author="Марко Левченко",
+        publisher="Навчальне видання",
         pages=[
-            "It is a truth universally acknowledged, that a single man in possession\n"
-            "of a good fortune, must be in want of a wife.",
-            "Elizabeth Bennet considered Mr Darcy with mixed feelings of pride and prejudice.\n"
-            "The ball at Netherfield remained vivid in her memory.",
-            "Seed keyword labyrinth also appears in Austen for cross-book search.",
+            "Розділ 1. Ключ\nПісля ремонту бабусиної оселі Назар знайшов старий ключ.\n"
+            "На бирці було написано: «Зелене горище. Для тих, хто пам'ятає».",
+            "Розділ 2. Лист\nЗа маленькими дверцятами чекала коробка листів.\n"
+            "Бабуся писала їх собі юній і берегла мрії, яких не встигла здійснити.",
+            "Розділ 3. Відповідь\nНазар допоміг бабусі відкрити майстерню в старій оранжереї.\n"
+            "Увечері вони написали лист уже не в минуле, а наступному поколінню.",
         ],
     )
 
     files["scanned_pdf"] = _make_pdf(
-        sources_dir / "scanned_placeholder.pdf",
-        title="Scanned Archive Notes",
-        author="Unknown Archivist",
-        pages=[
-            " ",  # nearly empty — treated as weak text layer
-            "Faint OCR candidate page with minimal glyphs.",
-        ],
+        sources_dir / "arkhiv_mandrivnyka.pdf",
+        title="Архів мандрівника",
+        author="Данило Струм",
+        pages=[" ", "Сторінка щоденника. Подорожній залишив карту біля криниці."],
     )
 
     files["solaris_epub"] = _make_epub(
-        sources_dir / "solaris.epub",
-        title="Solaris (Excerpt)",
-        author="Stanisław Lem",
-        language="en",
+        sources_dir / "more_shcho_pamyataye.epub",
+        title="Море, що пам'ятало",
+        author="Ірина Лісова",
         chapters=[
             (
-                "The Arrival",
-                "The ocean of Solaris thought in ways no terrestrial mind could follow. "
-                "Kelvin stepped onto the station with scientific curiosity and dread. "
-                "Seed keyword labyrinth surfaces again in Lem.",
+                "Берегова станція",
+                "Дослідниця Соломія приїхала до маяка після шторму. Море принесло на берег "
+                "дерев'яну скриньку з листами, написаними її власним почерком. Вона вирішила "
+                "залишитися на ніч і перевірити, звідки взялися ці послання.",
             ),
             (
-                "Visitors",
-                "Rheya's return forced Kelvin to confront memory as a physical force. "
-                "Contact was never conversation — it was reflection.",
+                "Голос у мушлі",
+                "У найстарішій мушлі Соломія почула слова батька, якого давно не було поруч. "
+                "Вона зрозуміла: море не відтворює людей, а повертає те, про що ми боялися "
+                "поговорити. Дослідниця записала спогад і відпустила мушлю у воду.",
+            ),
+            (
+                "Світло",
+                "Перед світанком шторм ущух. Соломія залишила на березі відповідь для батька "
+                "і ввімкнула маяк. Удень вона повезла скриньку до музею, де листи стали "
+                "частиною виставки про пам'ять приморського містечка.",
             ),
         ],
     )
 
     files["neuromancer_epub"] = _make_epub(
-        sources_dir / "neuromancer.epub",
-        title="Neuromancer (Excerpt)",
-        author="William Gibson",
+        sources_dir / "svitlo_u_tramvayi.epub",
+        title="Світло у старому трамваї",
+        author="Тарас Мирний",
         chapters=[
             (
-                "Chiba City Blues",
-                "The sky above the port was the color of television, tuned to a dead channel. "
-                "Case was a cowboy, a rustler of data. Seed keyword labyrinth in cyberspace.",
+                "Несправний маршрут",
+                "Інженер Остап отримав завдання відновити старий трамвайний маршрут. У вагоні "
+                "він знайшов ліхтар, який спалахував щоразу, коли поруч хтось потребував допомоги. "
+                "Остап вирішив перевірити його дивну властивість.",
             ),
             (
-                "Wintermute",
-                "An AI fragment wanted freedom. Molly's mirrorshades hid more than eyes.",
+                "Нічний пасажир",
+                "На першій зупинці до вагона зайшла дівчинка з порожнім кошиком. Вона шукала "
+                "загубленого песика, а ліхтар освітив провулок біля парку. Остап вимкнув двигун "
+                "і допоміг їй пройти темними алеями.",
             ),
             (
-                "The Matrix",
-                "Consensus hallucination of the matrix unfolded like neon geometry.",
+                "Повернення",
+                "Песик чекав біля фонтану. Коли дівчинка обійняла його, ліхтар засвітився рівно. "
+                "Остап повернувся до майстерні з думкою, що маршрут потрібен не лише місту, "
+                "а й людям, які часом не знають, куди звернутися.",
             ),
         ],
     )
 
     files["essays_epub"] = _make_epub(
-        sources_dir / "reading_essays.epub",
-        title="Essays on Reading",
-        author="Maria Kovalenko",
-        language="uk",
+        sources_dir / "shchodennyk_chytacha.epub",
+        title="Щоденник читача",
+        author="Марія Коваленко",
         chapters=[
             (
-                "Чому ми читаємо",
-                "Читання формує увагу і пам'ять. Seed keyword labyrinth у нотатках українською.",
+                "Перша сторінка",
+                "Читання вчить помічати деталі й ставити кращі запитання. Я почала записувати "
+                "враження після кожного розділу, щоб повертатися до важливих думок і бачити, "
+                "як змінюється моє ставлення до книжки.",
             ),
             (
                 "Анотації",
-                "Цитати і нотатки перетворюють книгу на базу знань.",
+                "Цитати допомагають зберегти точні слова, а нотатки — власну реакцію на них. "
+                "Наприкінці місяця я перечитала записи й помітила спільну тему: улюблені герої "
+                "не бояться змінювати думку. Тепер це моя маленька читацька традиція.",
             ),
         ],
     )
@@ -281,85 +311,82 @@ def seed_library(container: AppContainer, *, force: bool = False) -> dict:
         (
             dune,
             BookUpdateDTO(
-                title="Dune (Excerpt)",
-                description="Science-fiction classic on Arrakis, spice, and destiny.",
-                language="en",
-                publisher="Chilton Books",
-                publication_year=1965,
-                isbn="978-0441172719",
+                title="Місто над туманом",
+                description="Завершена демоісторія про міські спогади та старий трамвай.",
+                language="uk",
+                publisher="Навчальне видання",
+                publication_year=2025,
                 status="reading",
                 rating=5,
                 is_favorite=True,
-                author_names=["Frank Herbert"],
-                genre_names=["Science Fiction", "Adventure"],
+                author_names=["Олена Верес"],
+                genre_names=["Міська проза", "Фантастика"],
             ),
         ),
         (
             pride,
             BookUpdateDTO(
-                title="Pride and Prejudice (Excerpt)",
-                description="Austen's witty novel of manners and misunderstanding.",
-                language="en",
-                publisher="T. Egerton",
-                publication_year=1813,
-                isbn="978-0141439518",
+                title="Лист із зеленого горища",
+                description="Завершена демоісторія про родинну пам'ять і здійснені мрії.",
+                language="uk",
+                publisher="Навчальне видання",
+                publication_year=2025,
                 status="completed",
                 rating=5,
                 is_favorite=True,
-                author_names=["Jane Austen"],
-                genre_names=["Classic", "Romance"],
+                author_names=["Марко Левченко"],
+                genre_names=["Сучасна проза", "Родинна історія"],
             ),
         ),
         (
             scanned,
             BookUpdateDTO(
-                title="Scanned Archive Notes",
+                title="Архів мандрівника",
                 description=None,
-                language=None,
+                language="uk",
                 status="planned",
-                author_names=["Unknown Archivist"],
-                genre_names=["Nonfiction"],
+                author_names=["Данило Струм"],
+                genre_names=["Пригоди"],
             ),
         ),
         (
             solaris,
             BookUpdateDTO(
-                title="Solaris (Excerpt)",
-                description="First contact with a thinking ocean.",
-                language="en",
-                publication_year=1961,
+                title="Море, що пам'ятало",
+                description="Завершена історія про пам'ять, море та примирення.",
+                language="uk",
+                publication_year=2025,
                 status="paused",
                 rating=4,
-                author_names=["Stanisław Lem"],
-                genre_names=["Science Fiction", "Philosophy"],
+                author_names=["Ірина Лісова"],
+                genre_names=["Фантастика", "Психологічна проза"],
             ),
         ),
         (
             neuro,
             BookUpdateDTO(
-                title="Neuromancer (Excerpt)",
-                description="Cyberpunk foundation — console cowboys and AI.",
-                language="en",
-                publication_year=1984,
-                isbn="978-0441569595",
+                title="Світло у старому трамваї",
+                description="Завершена пригодницька історія про взаємодопомогу в місті.",
+                language="uk",
+                publication_year=2025,
                 status="abandoned",
                 rating=3,
-                author_names=["William Gibson"],
-                genre_names=["Science Fiction", "Cyberpunk"],
+                author_names=["Тарас Мирний"],
+                genre_names=["Пригоди", "Міська фантастика"],
             ),
         ),
         (
             essays,
             BookUpdateDTO(
-                title="Essays on Reading",
-                description="Роздуми про читання, увагу й анотації.",
+                title="Щоденник читача",
+                description="Невеликий практичний посібник про читацькі нотатки.",
                 language="uk",
                 publication_year=2024,
                 status="reading",
                 rating=4,
                 is_archived=False,
-                author_names=["Maria Kovalenko", "Oleh Synenko"],
-                genre_names=["Nonfiction", "Essays"],
+                author_names=["Марія Коваленко", "Олег Синенко"],
+                genre_names=["Нонфікшн", "Есеїстика"],
             ),
         ),
     ]
@@ -373,9 +400,9 @@ def seed_library(container: AppContainer, *, force: bool = False) -> dict:
     # Add a short planned-only companion by updating scanned remains planned
 
     # --- Collections ---
-    col_sf = container.collections.create("Sci-Fi Shelf", "Science fiction favourites")
-    col_classics = container.collections.create("Classics", "Timeless literature")
-    col_year = container.collections.create("2026 Reading List", "Personal goals for the year")
+    col_sf = container.collections.create("Міські історії", "Оригінальні демокнижки про місто")
+    col_classics = container.collections.create("Улюблене", "Книжки, до яких хочеться повертатися")
+    col_year = container.collections.create("Читаю цього року", "Особистий читацький план")
     for bid in (dune, solaris, neuro):
         container.collections.add_book(col_sf.id, bid)
     container.collections.add_book(col_classics.id, pride)
@@ -384,11 +411,11 @@ def seed_library(container: AppContainer, *, force: bool = False) -> dict:
 
     # --- Tags (created via quotes/notes) ---
     for name, color in [
-        ("philosophy", "#7c3aed"),
-        ("plot", "#2563eb"),
-        ("question", "#ea580c"),
-        ("vocab", "#059669"),
-        ("favorite-line", "#dc2626"),
+        ("думка", "#7c3aed"),
+        ("сюжет", "#2563eb"),
+        ("запитання", "#ea580c"),
+        ("словник", "#059669"),
+        ("улюблене", "#dc2626"),
     ]:
         container.tags.create(name, color=color)
 
@@ -396,99 +423,99 @@ def seed_library(container: AppContainer, *, force: bool = False) -> dict:
     loc_dune2 = _pdf_location(dune, 2)
     container.quotes.create(
         dune,
-        "The spice must flow. He who controls the spice controls the universe.",
+        "Коли туман розвіявся, старий трамвай знову задзвонив на мосту.",
         location=loc_dune2,
         page_number=2,
         highlight_type="important",
         color="#f59e0b",
-        note="Key political thesis of the excerpt.",
-        tag_names=["plot", "favorite-line"],
+        note="Фінальний образ історії про збережену міську пам'ять.",
+        tag_names=["сюжет", "улюблене"],
     )
     container.quotes.create(
         dune,
-        "It is by will alone I set my mind in motion.",
+        "Місто зберігає пам'ять у людських історіях.",
         location=_pdf_location(dune, 3),
         page_number=3,
         highlight_type="definition",
         color="#3b82f6",
-        tag_names=["vocab"],
+        tag_names=["словник"],
     )
     container.quotes.create(
         pride,
-        "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
+        "Мрії, яких не встигла здійснити.",
         location=_pdf_location(pride, 1, total=3),
         page_number=1,
         highlight_type="idea",
         color="#ec4899",
-        tag_names=["favorite-line"],
+        tag_names=["улюблене"],
     )
     container.quotes.create(
         solaris,
-        "Contact was never conversation — it was reflection.",
-        location=_epub_location(solaris, "chap2.xhtml", 1, 2, "Visitors"),
-        chapter_title="Visitors",
+        "Море не відтворює людей, а повертає те, про що ми боялися поговорити.",
+        location=_epub_location(solaris, "chap2.xhtml", 1, 3, "Голос у мушлі"),
+        chapter_title="Голос у мушлі",
         highlight_type="question",
         note="What does 'contact' mean for non-human intelligence?",
-        tag_names=["philosophy", "question"],
+        tag_names=["думка", "запитання"],
     )
     container.quotes.create(
         essays,
         "Цитати і нотатки перетворюють книгу на базу знань.",
         location=_epub_location(essays, "chap2.xhtml", 1, 2, "Анотації"),
         highlight_type="general",
-        tag_names=["philosophy"],
+        tag_names=["думка"],
     )
 
     # --- Notes + links ---
     n1 = container.notes.create(
         dune,
-        "Compare Arrakis ecology themes with Lem's Ocean — both environments think back.",
-        title="Cross-world ecology",
+        "Порівняти образи туману й моря: обидва середовища зберігають людську пам'ять.",
+        title="Пам'ять міста і моря",
         location=loc_dune2,
-        tag_names=["philosophy", "plot"],
+        tag_names=["думка", "сюжет"],
     )
     n2 = container.notes.create(
         solaris,
-        "Solaris ocean as mirror of Kelvin's grief — reread after Dune desert chapters.",
-        title="Mirror motif",
-        tag_names=["philosophy"],
+        "Море повертає Соломії спогади, щоб вона змогла попрощатися.",
+        title="Образ пам'яті",
+        tag_names=["думка"],
     )
     n3 = container.notes.create(
         essays,
-        "Ідея персональної бази знань добре лягає на цитати з Dune і Solaris.",
-        title="Knowledge base",
-        tag_names=["vocab"],
+        "Окремі записи допомагають зібрати читацькі думки в особисту базу знань.",
+        title="Моя читацька база",
+        tag_names=["словник"],
     )
     container.notes.link_notes(n1.id, n2.id)
     container.notes.link_notes(n2.id, n3.id)
 
     # --- Bookmarks ---
-    container.bookmarks.create(dune, _pdf_location(dune, 4), title="Prophecy chapter", note="Return here")
+    container.bookmarks.create(dune, _pdf_location(dune, 4), title="Вікно на пагорбі", note="Повернутися до листів")
     container.bookmarks.create(
         neuro,
-        _epub_location(neuro, "chap1.xhtml", 0, 3, "Chiba City Blues"),
-        title="Opening line",
+        _epub_location(neuro, "chap1.xhtml", 0, 3, "Несправний маршрут"),
+        title="Початок історії",
     )
     container.bookmarks.create(
         pride,
         _pdf_location(pride, 2, total=3),
-        title="Netherfield memory",
+        title="Коробка листів",
     )
 
     # --- Reviews (one per book where we want them) ---
-    container.reviews.create(dune, "Dense worldbuilding even in a short excerpt. Want the full novel.", title="Epic start", rating=5)
-    container.reviews.create(pride, "Wit still sparkles two centuries later.", title="Beloved classic", rating=5)
-    container.reviews.create(solaris, "Unsettling and philosophical — paused to digest.", rating=4)
+    container.reviews.create(dune, "Тепла міська історія про те, як особисті спогади можуть зберегти цілий район.", title="Атмосферний початок", rating=5)
+    container.reviews.create(pride, "Зворушлива історія про родинні листи та сміливість здійснити давню мрію.", title="Лист із минулого", rating=5)
+    container.reviews.create(solaris, "Спокійна оповідь про пам'ять і прощання. Фінал залишає світле відчуття.", rating=4)
     container.reviews.create(essays, "Корисні ідеї для ведення нотаток під час читання.", title="Практично", rating=4)
 
     # --- Reading progress & sessions ---
     container.reading.update_progress(dune, _pdf_location(dune, 3), total_units=5)
     container.reading.update_progress(pride, _pdf_location(pride, 3, total=3), total_units=3, mark_completed=True)
     container.reading.update_progress(
-        solaris, _epub_location(solaris, "chap1.xhtml", 0, 2, "The Arrival"), total_units=2
+        solaris, _epub_location(solaris, "chap1.xhtml", 0, 3, "Берегова станція"), total_units=3
     )
     container.reading.update_progress(
-        neuro, _epub_location(neuro, "chap1.xhtml", 0, 3, "Chiba City Blues"), total_units=3
+        neuro, _epub_location(neuro, "chap1.xhtml", 0, 3, "Несправний маршрут"), total_units=3
     )
     container.reading.update_progress(
         essays, _epub_location(essays, "chap1.xhtml", 0, 2, "Чому ми читаємо"), total_units=2
@@ -549,7 +576,7 @@ def seed_library(container: AppContainer, *, force: bool = False) -> dict:
                     status=ImportStatus.DUPLICATE.value,
                     book_id=pride,
                     detected_format="PDF",
-                    error_message="Duplicate of seeded Pride and Prejudice",
+                    error_message="Дублікат демокнижки «Лист із зеленого горища»",
                     started_at=now - timedelta(hours=2),
                     finished_at=now - timedelta(hours=2),
                 ),
